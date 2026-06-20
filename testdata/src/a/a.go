@@ -64,8 +64,62 @@ func construction() {
 	_ = Box{nil, 0}                // want `set field to a Null object .* for a\.Thing`
 	_ = Box{NullThing(), 0}        // ok (positional, non-nil)
 	_ = Box{N: 0}                  // ok (T field omitted; zero-value nil is not flagged)
+	_ = Box{N: 1, T: nil}          // want `set field T to a Null object .* for a\.Thing`
 	_ = []Thing{nil}               // want `set element to a Null object .* for a\.Thing`
 	_ = [1]Thing{nil}              // want `set element to a Null object .* for a\.Thing`
+	_ = []Thing{0: nil}            // want `set element to a Null object .* for a\.Thing`
+	_ = [2]Thing{1: nil}           // want `set element to a Null object .* for a\.Thing`
 	_ = map[string]Thing{"k": nil} // want `set map value to a Null object .* for a\.Thing`
 	_ = map[Thing]int{nil: 1}      // ok (only map values are checked, not keys)
+}
+
+// --- keyed struct field set to a real (non-nil) field, and embedded struct
+// keyed by its type name: exercises structFieldType's found-branch where the
+// field is not a Null-Object interface, so nothing is reported.
+
+type Inner struct{ T Thing }
+type Outer struct {
+	Inner
+	N int
+}
+
+func keyedNonNull() {
+	_ = Outer{Inner: Inner{T: NullThing()}, N: 1} // ok (Inner field is a struct; its T is non-nil)
+}
+
+// --- interfaces that declare an IsNull method but with the WRONG signature are
+// NOT Null-Object interfaces, so a nil targeting them is left alone. These cover
+// isNullObjectInterface's signature-shape rejection.
+
+type WrongParams interface {
+	IsNull(int) bool
+}
+type WrongResults interface {
+	IsNull() (bool, error)
+}
+type WrongResultType interface {
+	IsNull() int
+}
+
+func wrongSignatures() {
+	var a WrongParams = nil      // ok: IsNull takes a parameter
+	var b WrongResults = nil     // ok: IsNull returns two results
+	var c WrongResultType = nil  // ok: IsNull returns a non-bool
+	_, _, _ = a, b, c
+}
+
+func wrongSignatureReturn() WrongParams { return nil } // ok: not a Null-Object interface
+
+// --- checkReturn mismatch branch: `return f()` feeds N results from a single
+// call, so len(ret.Results) != results.Len() and the return is left alone.
+
+func twoThings() (Thing, Thing) { return NullThing(), NullThing() }
+
+func forwardCall() (Thing, Thing) {
+	return twoThings() // ok: single call feeding multiple results (count mismatch, skipped)
+}
+
+func nakedReturn() (t Thing) {
+	t = NullThing()
+	return // ok: naked return, left alone
 }

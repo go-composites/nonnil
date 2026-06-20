@@ -19,4 +19,15 @@ jobs:
           check-latest: true
       - run: go build ./...
       - run: go vet ./...
-      - run: go test ./...
+      - name: Test with 100% coverage gate
+        run: |
+          set -euo pipefail
+          for pkg in $(go list ./...); do
+            if ! ls "$(go list -f '{{.Dir}}' "$pkg")"/*_test.go >/dev/null 2>&1; then
+              echo "${pkg}: no tests — skipping"; continue
+            fi
+            go test -cover -coverprofile=cover.out "$pkg"
+            total=$(go tool cover -func=cover.out | awk '/^total:/ {print substr($3,1,length($3)-1)}')
+            echo "${pkg} coverage: ${total}%"
+            awk -v t="$total" 'BEGIN{exit (t+0>=100.0)?0:1}' || { echo "coverage ${total}% < 100%"; exit 1; }
+          done

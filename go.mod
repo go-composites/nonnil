@@ -1,4 +1,4 @@
-module github.com/golang-cop/nonnil
+module github.com/go-composites/nonnil
 
 go 1.26.4
 

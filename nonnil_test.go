@@ -3,7 +3,7 @@ package nonnil_test
 import (
 	"testing"
 
-	"github.com/golang-cop/nonnil"
+	"github.com/go-composites/nonnil"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

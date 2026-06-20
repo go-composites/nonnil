@@ -1,4 +1,4 @@
-// Package nonnil provides a go/analysis analyzer that enforces the golang-cop
+// Package nonnil provides a go/analysis analyzer that enforces the go-composites
 // Null-Object invariant: a function whose result is a "Null-Object interface"
 // (any interface declaring IsNull() bool) must never return a bare nil. Returning
 // nil reintroduces exactly the nil-dereference the Null-Object pattern exists to
@@ -25,7 +25,7 @@ const Doc = `report nil returns for Null-Object interfaces (interfaces with IsNu
 
 A function returning such an interface must hand back a real Null object
 (e.g. Null.New()) rather than a bare nil, so callers never dereference an
-undefined value. This is the compiler-checkable form of the golang-cop
+undefined value. This is the compiler-checkable form of the go-composites
 "never nil" invariant.`
 
 // Analyzer is the nonnil analyzer.
@@ -98,7 +98,7 @@ func checkReturn(pass *analysis.Pass, results *types.Tuple, ret *ast.ReturnStmt)
 }
 
 // isNullObjectInterface reports whether t is an interface type that declares
-// IsNull() bool — the marker of the golang-cop Null-Object family.
+// IsNull() bool — the marker of the go-composites Null-Object family.
 func isNullObjectInterface(t types.Type) bool {
 	if _, ok := t.Underlying().(*types.Interface); !ok {
 		return false

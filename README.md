@@ -1,8 +1,8 @@
-# golang-cop/nonnil
+# go-composites/nonnil
 
-[![ci](https://github.com/golang-cop/nonnil/actions/workflows/ci.yml/badge.svg)](https://github.com/golang-cop/nonnil/actions/workflows/ci.yml)
+[![ci](https://github.com/go-composites/nonnil/actions/workflows/ci.yml/badge.svg)](https://github.com/go-composites/nonnil/actions/workflows/ci.yml)
 
-A `go vet` analyzer that enforces the [golang-cop](https://github.com/golang-cop)
+A `go vet` analyzer that enforces the [go-composites](https://github.com/go-composites)
 **Null-Object invariant**: a function whose result is a *Null-Object interface*
 (any interface declaring `IsNull() bool`) must never return a bare `nil` — it must
 hand back a real Null object (`Null.New()`, `NullError.New()`, …).
@@ -22,7 +22,7 @@ mistake un-mergeable.
 ## Install & use
 
 ```sh
-go install github.com/golang-cop/nonnil/cmd/nonnil@latest
+go install github.com/go-composites/nonnil/cmd/nonnil@latest
 go vet -vettool=$(which nonnil) ./...
 ```
 
@@ -30,7 +30,7 @@ It reports, for example:
 
 ```
 src/error.go:43:46: return a Null object (e.g. Null.New()) instead of nil for
-  github.com/golang-cop/error/src.Interface: it is a Null-Object interface
+  github.com/go-composites/error/src.Interface: it is a Null-Object interface
   (IsNull() bool), and nil reintroduces the nil-dereference the pattern prevents
 ```
 
@@ -50,10 +50,10 @@ also left alone — those are explicit and uncommon.
 Add to each repo's workflow:
 
 ```yaml
-  - run: go install github.com/golang-cop/nonnil/cmd/nonnil@latest
+  - run: go install github.com/go-composites/nonnil/cmd/nonnil@latest
   - run: go vet -vettool=$(which nonnil) ./...
 ```
 
 ## License
 
-BSD-3-Clause © the golang-cop/nonnil authors.
+BSD-3-Clause © the go-composites/nonnil authors.

@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/go-composites/brand/main/social/go-composites.png" alt="go-composites/nonnil" width="720"></p>
+
 # go-composites/nonnil
 
 [![ci](https://github.com/go-composites/nonnil/actions/workflows/ci.yml/badge.svg)](https://github.com/go-composites/nonnil/actions/workflows/ci.yml)

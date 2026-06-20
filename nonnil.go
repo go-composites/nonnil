@@ -15,6 +15,7 @@ package nonnil
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 
 	"golang.org/x/tools/go/analysis"
@@ -74,7 +75,109 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return true
 		})
 	}
+
+	// Construction pass: nil assigned or initialised into a Null-Object target —
+	// an assignment, a var with explicit type, or a composite literal element
+	// (struct field, map value, slice/array element).
+	for _, f := range pass.Files {
+		ast.Inspect(f, func(n ast.Node) bool {
+			switch x := n.(type) {
+			case *ast.AssignStmt:
+				if x.Tok == token.ASSIGN && len(x.Lhs) == len(x.Rhs) {
+					for i := range x.Lhs {
+						reportNil(pass, typeOf(pass, x.Lhs[i]), x.Rhs[i], "assign")
+					}
+				}
+			case *ast.ValueSpec:
+				if len(x.Values) == len(x.Names) {
+					for i := range x.Names {
+						reportNil(pass, defType(pass, x.Names[i]), x.Values[i], "initialise")
+					}
+				}
+			case *ast.CompositeLit:
+				checkComposite(pass, x)
+			}
+			return true
+		})
+	}
 	return nil, nil
+}
+
+func typeOf(pass *analysis.Pass, e ast.Expr) types.Type {
+	if tv, ok := pass.TypesInfo.Types[e]; ok {
+		return tv.Type
+	}
+	return nil
+}
+
+func defType(pass *analysis.Pass, id *ast.Ident) types.Type {
+	if obj := pass.TypesInfo.Defs[id]; obj != nil {
+		return obj.Type()
+	}
+	return nil
+}
+
+// reportNil flags a bare nil targeting a Null-Object interface.
+func reportNil(pass *analysis.Pass, target types.Type, expr ast.Expr, verb string) {
+	if target == nil || !isNullObjectInterface(target) {
+		return
+	}
+	if tv, ok := pass.TypesInfo.Types[expr]; ok && tv.IsNil() {
+		pass.Reportf(expr.Pos(),
+			"%s a Null object (e.g. Null.New()) instead of nil for %s: it is a Null-Object interface (IsNull() bool)",
+			verb, target)
+	}
+}
+
+func checkComposite(pass *analysis.Pass, lit *ast.CompositeLit) {
+	t := typeOf(pass, lit)
+	if t == nil {
+		return
+	}
+	switch u := t.Underlying().(type) {
+	case *types.Struct:
+		for i, elt := range lit.Elts {
+			if kv, ok := elt.(*ast.KeyValueExpr); ok {
+				if id, ok := kv.Key.(*ast.Ident); ok {
+					reportNil(pass, structFieldType(u, id.Name), kv.Value, "set field "+id.Name+" to")
+				}
+			} else if i < u.NumFields() {
+				reportNil(pass, u.Field(i).Type(), elt, "set field to")
+			}
+		}
+	case *types.Map:
+		for _, elt := range lit.Elts {
+			if kv, ok := elt.(*ast.KeyValueExpr); ok {
+				reportNil(pass, u.Elem(), kv.Value, "set map value to")
+			}
+		}
+	case *types.Slice:
+		for _, elt := range lit.Elts {
+			reportNil(pass, u.Elem(), litElemValue(elt), "set element to")
+		}
+	case *types.Array:
+		for _, elt := range lit.Elts {
+			reportNil(pass, u.Elem(), litElemValue(elt), "set element to")
+		}
+	}
+}
+
+// litElemValue returns the value expression of a slice/array element, unwrapping
+// an indexed element (`[i]: v`).
+func litElemValue(elt ast.Expr) ast.Expr {
+	if kv, ok := elt.(*ast.KeyValueExpr); ok {
+		return kv.Value
+	}
+	return elt
+}
+
+func structFieldType(s *types.Struct, name string) types.Type {
+	for i := 0; i < s.NumFields(); i++ {
+		if s.Field(i).Name() == name {
+			return s.Field(i).Type()
+		}
+	}
+	return nil
 }
 
 func checkReturn(pass *analysis.Pass, results *types.Tuple, ret *ast.ReturnStmt) {

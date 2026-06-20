@@ -36,14 +36,20 @@ src/error.go:43:46: return a Null object (e.g. Null.New()) instead of nil for
 
 ## What it flags
 
-- A **bare `return nil`** in any result position whose declared type is an
-  interface with an `IsNull() bool` method (directly or embedded).
-- Works for single and multi-value returns, and inside function literals.
+A bare `nil` targeting a Null-Object interface (one with `IsNull() bool`,
+directly or embedded), at every site where it would reintroduce a nil to
+dereference:
+
+- **`return nil`** — any result position (single and multi-value), incl. function literals.
+- **`x = nil`** — assignment to a Null-Object-typed variable/field.
+- **`var x T = nil`** — initialisation with an explicit Null-Object type.
+- **composite literals** — `T{Field: nil}`, `[]T{nil}`, `[N]T{nil}`, `map[K]T{k: nil}`.
 
 It deliberately does **not** flag interfaces without `IsNull()` (e.g. the builtin
 `error`, or `Result.Interface`), so false positives are minimal. A deliberate
-typed conversion `return (Thing)(nil)` or returning a nil interface variable is
-also left alone — those are explicit and uncommon.
+typed conversion `return (Thing)(nil)`, a nil interface variable, an omitted
+struct field (its zero value), or a nil map *key* are left alone — those are
+explicit, structural, or uncommon.
 
 ## CI
 

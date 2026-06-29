@@ -1,3 +1,10 @@
+> [!WARNING]
+> **Moved to https://github.com/go-vet-analyzers/nonnil**
+>
+> `nonnil` now lives in the dedicated **go-vet-analyzers** org. This repository
+> is archived (read-only). Update any `go install` reference to
+> `github.com/go-vet-analyzers/nonnil/cmd/nonnil@latest`.
+
 <p align="center"><img src="https://raw.githubusercontent.com/go-composites/brand/main/social/go-composites.png" alt="go-composites/nonnil" width="720"></p>
 
 # go-composites/nonnil
